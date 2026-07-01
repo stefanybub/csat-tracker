@@ -1,0 +1,252 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --ink:#14181f;--panel:#1c2230;--panel-2:#232b3b;--line:#2f3849;
+    --muted:#8b95a7;--text:#eef1f6;--pos:#3ecf8e;--pos-soft:#123a2b;
+    --neg:#f0724a;--neg-soft:#3a1c14;--accent:#6ea8fe;--goal:#f4c04e;
+    --radius:14px;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:transparent;color:var(--text);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:20px 16px 40px}
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  .title h1{font-size:19px;font-weight:700;margin:0;letter-spacing:-.2px}
+  .title p{margin:4px 0 0;color:var(--muted);font-size:13px}
+  .monthnav{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px}
+  .monthnav button{background:none;border:none;color:var(--text);font-size:16px;width:30px;height:30px;border-radius:7px;cursor:pointer}
+  .monthnav button:hover{background:var(--panel-2)}
+  .monthnav .label{font-size:13px;font-weight:600;min-width:110px;text-align:center;text-transform:capitalize}
+  .hero{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:16px}
+  .hero-row{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  .bignum{font-size:56px;font-weight:800;line-height:1;letter-spacing:-1.5px}
+  .bignum.pos{color:var(--pos)}.bignum.neg{color:var(--neg)}
+  .goalpill{font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;border:1px solid var(--line)}
+  .goalpill.hit{background:var(--pos-soft);color:var(--pos);border-color:transparent}
+  .goalpill.miss{background:var(--neg-soft);color:var(--neg);border-color:transparent}
+  .hero-sub{color:var(--muted);font-size:13px;margin-top:6px}
+  .hero-sub b{color:var(--text);font-weight:600}
+  .bar{position:relative;height:12px;background:var(--panel-2);border-radius:999px;margin-top:18px;overflow:hidden}
+  .bar .fill{position:absolute;top:0;left:0;height:100%;border-radius:999px;transition:width .4s ease,background .3s}
+  .goalmark{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--goal);z-index:2}
+  .goalmark::after{content:'meta 92%';position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--goal);white-space:nowrap;font-weight:600}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:16px}
+  .card h2{font-size:14px;margin:0 0 14px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px;margin-bottom:12px}
+  .field label{display:block;font-size:12px;margin-bottom:5px;color:var(--muted)}
+  .field .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .field input{width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;color:var(--text);padding:9px 10px;font-size:15px;text-align:center;font-weight:600}
+  .field input[type=date]{font-weight:500;text-align:left}
+  .field input:focus{outline:none;border-color:var(--accent)}
+  .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .btn{background:var(--accent);color:#0b1220;border:none;font-weight:700;font-size:14px;padding:10px 18px;border-radius:9px;cursor:pointer}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);font-weight:600}
+  .btn.ghost:hover{color:var(--text)}
+  .saveflash{font-size:13px;font-weight:700;opacity:0;transition:opacity .2s}
+  .saveflash.show{opacity:1}
+  .saveflash.ok{color:var(--pos)}.saveflash.err{color:var(--neg)}
+  .live{margin-left:auto;font-size:13px;color:var(--muted)}.live b{color:var(--text)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:10px 8px;text-align:center;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+  td.date,th.date{text-align:left}
+  tbody tr:hover{background:var(--panel-2)}
+  .pct{font-weight:700}.pct.pos{color:var(--pos)}.pct.neg{color:var(--neg)}
+  .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;opacity:.6}
+  .del:hover{color:var(--neg);opacity:1}
+  tfoot td{font-weight:700;border-top:2px solid var(--line);border-bottom:none;padding-top:12px}
+  .empty{text-align:center;color:var(--muted);padding:26px;font-size:13px}
+  .statusline{display:flex;align-items:center;gap:8px;font-size:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+  .statusdot{width:8px;height:8px;border-radius:50%;flex:none}
+  .statusdot.ok{background:var(--pos)}.statusdot.err{background:var(--neg)}
+  .statustext{color:var(--muted)}
+  .backup{width:100%;margin-top:12px;min-height:70px;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:monospace;font-size:12px;padding:10px;resize:vertical}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div class="title">
+      <h1>Tracker de CSAT</h1>
+      <p>Positivos = bom + ótimo · Meta: 92% ou mais</p>
+    </div>
+    <div class="monthnav">
+      <button id="prevM" aria-label="Mês anterior">‹</button>
+      <span class="label" id="monthLabel"></span>
+      <button id="nextM" aria-label="Próximo mês">›</button>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-row">
+      <span class="bignum" id="pctBig">—</span>
+      <span class="goalpill" id="goalPill">—</span>
+    </div>
+    <div class="hero-sub" id="heroSub">Nenhuma avaliação registrada neste mês ainda.</div>
+    <div class="bar">
+      <div class="fill" id="barFill" style="width:0%"></div>
+      <div class="goalmark" style="left:92%"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Registrar avaliações do dia</h2>
+    <div class="form-grid">
+      <div class="field"><label for="fDate">Data</label><input type="date" id="fDate"></div>
+      <div class="field"><label><span class="dot" style="background:#3ecf8e"></span>Ótimo</label><input type="number" id="fOtimo" min="0" value="0"></div>
+      <div class="field"><label><span class="dot" style="background:#7fd6a6"></span>Bom</label><input type="number" id="fBom" min="0" value="0"></div>
+      <div class="field"><label><span class="dot" style="background:#8b95a7"></span>Neutro</label><input type="number" id="fNeutro" min="0" value="0"></div>
+      <div class="field"><label><span class="dot" style="background:#f0a24a"></span>Ruim</label><input type="number" id="fRuim" min="0" value="0"></div>
+      <div class="field"><label><span class="dot" style="background:#f0724a"></span>Péssimo</label><input type="number" id="fPessimo" min="0" value="0"></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="saveBtn">Salvar dia</button>
+      <button class="btn ghost" id="clearBtn">Limpar campos</button>
+      <span class="saveflash" id="saveFlash"></span>
+      <span class="live" id="liveCalc"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Histórico do mês</h2>
+    <div id="tableWrap"></div>
+    <div class="statusline">
+      <span class="statusdot" id="statusDot"></span>
+      <span class="statustext" id="saveNote"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Backup dos dados</h2>
+    <div class="actions">
+      <button class="btn ghost" id="exportBtn">Copiar backup</button>
+      <button class="btn ghost" id="importBtn">Restaurar backup</button>
+      <span class="live" id="backupMsg"></span>
+    </div>
+    <textarea class="backup" id="backupArea" placeholder="Clique em Copiar backup para gerar o texto, ou cole um backup aqui e clique em Restaurar."></textarea>
+  </div>
+</div>
+
+<script>
+const KEY='csat_tracker_v2';
+const GOAL=92;
+const CATS=['otimo','bom','neutro','ruim','pessimo'];
+const MONTHS=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const HAS_WS = typeof window!=='undefined' && window.storage && typeof window.storage.get==='function';
+let entries={}, viewYM, storageOK=false, saveMethod='';
+
+function normalize(p){ return (p && typeof p==='object' && !Array.isArray(p)) ? p : null; }
+function lsGet(){ try{ const v=localStorage.getItem(KEY); return v?normalize(JSON.parse(v)):null; }catch(e){ return null; } }
+function lsSet(){ try{ localStorage.setItem(KEY, JSON.stringify(entries)); return true; }catch(e){ return false; } }
+
+async function load(){
+  let data=null;
+  if(HAS_WS){ try{ const r=await window.storage.get(KEY); if(r&&r.value) data=normalize(JSON.parse(r.value)); }catch(e){} }
+  if(!data){ data=lsGet(); }          // salva/lê também no navegador local
+  entries = data || {};
+}
+async function save(){
+  let wsOK=false;
+  if(HAS_WS){ try{ await window.storage.set(KEY, JSON.stringify(entries)); const chk=await window.storage.get(KEY); wsOK=!!(chk&&chk.value); }catch(e){} }
+  const lsOK = lsSet();
+  storageOK = wsOK || lsOK;
+  saveMethod = lsOK ? 'ls' : (wsOK ? 'ws' : 'none');
+  renderNote();
+  return storageOK;
+}
+
+function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function ymOf(iso){const[y,m]=iso.split('-');return{y:+y,m:+m};}
+function sameMonth(iso){const p=ymOf(iso);return p.y===viewYM.y&&p.m===viewYM.m;}
+function fmtDay(iso){return iso.split('-')[2];}
+function positives(e){return(e.otimo||0)+(e.bom||0);}
+function totalOf(e){return CATS.reduce((s,c)=>s+(e[c]||0),0);}
+
+function monthAgg(){
+  let pos=0,tot=0,byCat={otimo:0,bom:0,neutro:0,ruim:0,pessimo:0};
+  for(const iso in entries){ if(!sameMonth(iso))continue; const e=entries[iso];
+    pos+=positives(e);tot+=totalOf(e);CATS.forEach(c=>byCat[c]+=(e[c]||0)); }
+  return{pos,tot,byCat,pct:tot?(pos/tot*100):null};
+}
+
+function renderHero(){
+  const{pos,tot,pct}=monthAgg();
+  const big=document.getElementById('pctBig'),pill=document.getElementById('goalPill'),
+        sub=document.getElementById('heroSub'),fill=document.getElementById('barFill');
+  if(tot===0){big.textContent='—';big.className='bignum';pill.textContent='sem dados';pill.className='goalpill';
+    sub.textContent='Nenhuma avaliação registrada neste mês ainda.';fill.style.width='0%';return;}
+  const hit=pct>=GOAL;
+  big.textContent=pct.toFixed(1).replace('.',',')+'%';big.className='bignum '+(hit?'pos':'neg');
+  pill.textContent=hit?'✓ meta atingida':(GOAL-pct).toFixed(1).replace('.',',')+' p.p. da meta';
+  pill.className='goalpill '+(hit?'hit':'miss');
+  sub.innerHTML=`<b>${pos}</b> positivos e <b>${tot-pos}</b> negativos em <b>${tot}</b> avaliações`;
+  fill.style.width=Math.min(pct,100)+'%';fill.style.background=hit?'var(--pos)':'var(--neg)';
+}
+function renderTable(){
+  const rows=Object.keys(entries).filter(sameMonth).sort();
+  const wrap=document.getElementById('tableWrap');
+  if(rows.length===0){wrap.innerHTML='<div class="empty">Sem registros neste mês. Adicione o primeiro dia acima.</div>';return;}
+  let body='';
+  rows.forEach(iso=>{const e=entries[iso],tot=totalOf(e),pos=positives(e),pct=tot?(pos/tot*100):0,cls=pct>=GOAL?'pos':'neg';
+    body+=`<tr><td class="date">${fmtDay(iso)}</td><td>${e.otimo||0}</td><td>${e.bom||0}</td><td>${e.neutro||0}</td><td>${e.ruim||0}</td><td>${e.pessimo||0}</td><td>${tot}</td><td class="pct ${cls}">${tot?pct.toFixed(1).replace('.',',')+'%':'—'}</td><td><button class="del" data-iso="${iso}" title="Excluir">✕</button></td></tr>`;});
+  const{pos,tot,byCat,pct}=monthAgg(),fcls=pct>=GOAL?'pos':'neg';
+  wrap.innerHTML=`<table><thead><tr><th class="date">Dia</th><th>Ótimo</th><th>Bom</th><th>Neutro</th><th>Ruim</th><th>Péssimo</th><th>Total</th><th>Positivo %</th><th></th></tr></thead><tbody>${body}</tbody><tfoot><tr><td class="date">Total</td><td>${byCat.otimo}</td><td>${byCat.bom}</td><td>${byCat.neutro}</td><td>${byCat.ruim}</td><td>${byCat.pessimo}</td><td>${tot}</td><td class="pct ${fcls}">${pct?pct.toFixed(1).replace('.',',')+'%':'—'}</td><td></td></tr></tfoot></table>`;
+  wrap.querySelectorAll('.del').forEach(b=>{b.onclick=async()=>{delete entries[b.dataset.iso];await save();renderAll();};});
+}
+function renderMonthLabel(){document.getElementById('monthLabel').textContent=MONTHS[viewYM.m-1]+' '+viewYM.y;}
+function renderNote(){
+  const dot=document.getElementById('statusDot'),txt=document.getElementById('saveNote');
+  if(saveMethod==='ls'){ dot.className='statusdot ok';
+    txt.textContent='Salvo neste navegador — os dados continuam ao atualizar a página.'; }
+  else if(saveMethod==='ws'){ dot.className='statusdot ok';
+    txt.textContent='Salvo na sessão do chat. Se ao atualizar a página os dados sumirem, baixe o arquivo e abra no seu navegador (ou publique no GitHub Pages) para salvar de vez.'; }
+  else{ dot.className='statusdot err';
+    txt.textContent='Não foi possível salvar de forma permanente aqui. Use "Copiar backup" para guardar seus dados.'; }
+}
+function renderAll(){renderMonthLabel();renderHero();renderTable();}
+
+function readForm(){return{otimo:+document.getElementById('fOtimo').value||0,bom:+document.getElementById('fBom').value||0,neutro:+document.getElementById('fNeutro').value||0,ruim:+document.getElementById('fRuim').value||0,pessimo:+document.getElementById('fPessimo').value||0};}
+function liveCalc(){const e=readForm(),tot=totalOf(e),el=document.getElementById('liveCalc');
+  if(!tot){el.innerHTML='';return;}el.innerHTML=`Neste dia: <b>${(positives(e)/tot*100).toFixed(1).replace('.',',')}%</b> positivo (${positives(e)}/${tot})`;}
+function loadDayIntoForm(iso){const e=entries[iso];if(!e)return;
+  document.getElementById('fOtimo').value=e.otimo||0;document.getElementById('fBom').value=e.bom||0;document.getElementById('fNeutro').value=e.neutro||0;document.getElementById('fRuim').value=e.ruim||0;document.getElementById('fPessimo').value=e.pessimo||0;liveCalc();}
+function flash(msg,ok){const f=document.getElementById('saveFlash');f.textContent=msg;f.className='saveflash show '+(ok?'ok':'err');setTimeout(()=>f.className='saveflash',1800);}
+
+(async function(){
+  await load();
+  const t=todayISO();viewYM=ymOf(t);
+  document.getElementById('fDate').value=t;
+  if(entries[t])loadDayIntoForm(t);
+  CATS.forEach(c=>{document.getElementById('f'+c.charAt(0).toUpperCase()+c.slice(1)).addEventListener('input',liveCalc);});
+  document.getElementById('fDate').addEventListener('change',e=>{const iso=e.target.value;if(!iso)return;const p=ymOf(iso);viewYM={y:p.y,m:p.m};if(entries[iso])loadDayIntoForm(iso);renderAll();});
+  document.getElementById('saveBtn').onclick=async()=>{
+    const iso=document.getElementById('fDate').value;if(!iso){flash('Escolha uma data',false);return;}
+    const e=readForm();
+    if(totalOf(e)===0){delete entries[iso];}else{entries[iso]=e;}
+    const ok=await save();renderAll();
+    flash(ok?'Salvo ✓':'Salvo só nesta sessão — faça backup',ok);
+  };
+  document.getElementById('clearBtn').onclick=()=>{CATS.forEach(c=>{document.getElementById('f'+c.charAt(0).toUpperCase()+c.slice(1)).value=0;});liveCalc();};
+  document.getElementById('prevM').onclick=()=>{let m=viewYM.m-1,y=viewYM.y;if(m<1){m=12;y--;}viewYM={y,m};renderAll();};
+  document.getElementById('nextM').onclick=()=>{let m=viewYM.m+1,y=viewYM.y;if(m>12){m=1;y++;}viewYM={y,m};renderAll();};
+
+  document.getElementById('exportBtn').onclick=async()=>{
+    const txt=JSON.stringify(entries);
+    document.getElementById('backupArea').value=txt;
+    try{await navigator.clipboard.writeText(txt);document.getElementById('backupMsg').textContent='Backup copiado para a área de transferência.';}
+    catch(e){document.getElementById('backupMsg').textContent='Backup gerado na caixa abaixo — copie manualmente.';}
+  };
+  document.getElementById('importBtn').onclick=async()=>{
+    const raw=document.getElementById('backupArea').value.trim();
+    if(!raw){document.getElementById('backupMsg').textContent='Cole um backup na caixa primeiro.';return;}
+    try{const parsed=JSON.parse(raw);
+      if(typeof parsed!=='object'||Array.isArray(parsed))throw 0;
+      entries=parsed;await save();renderAll();
+      document.getElementById('backupMsg').textContent='Backup restaurado com sucesso.';}
+    catch(e){document.getElementById('backupMsg').textContent='Backup inválido — verifique o texto colado.';}
+  };
+
+  renderNote();renderAll();
+})();
+</script>

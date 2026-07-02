@@ -139,6 +139,13 @@ let entries={}, viewYM, storageOK=false, saveMethod='';
 function normalize(p){ return (p && typeof p==='object' && !Array.isArray(p)) ? p : null; }
 function lsGet(){ try{ const v=localStorage.getItem(KEY); return v?normalize(JSON.parse(v)):null; }catch(e){ return null; } }
 function lsSet(){ try{ localStorage.setItem(KEY, JSON.stringify(entries)); return true; }catch(e){ return false; } }
+function probeStorage(){
+  let okLs=false;
+  try{ localStorage.setItem('__csat_probe__','1'); localStorage.removeItem('__csat_probe__'); okLs=true; }catch(e){}
+  if(okLs){ storageOK=true; saveMethod='ls'; }
+  else if(HAS_WS){ storageOK=true; saveMethod='ws'; }
+  else { storageOK=false; saveMethod='none'; }
+}
 
 async function load(){
   let data=null;
@@ -247,6 +254,6 @@ function flash(msg,ok){const f=document.getElementById('saveFlash');f.textConten
     catch(e){document.getElementById('backupMsg').textContent='Backup inválido — verifique o texto colado.';}
   };
 
-  renderNote();renderAll();
+  probeStorage();renderNote();renderAll();
 })();
 </script>

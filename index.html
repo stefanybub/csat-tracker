@@ -1,259 +1,453 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tracker de CSAT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#14181f;--panel:#1c2230;--panel-2:#232b3b;--line:#2f3849;
-    --muted:#8b95a7;--text:#eef1f6;--pos:#3ecf8e;--pos-soft:#123a2b;
-    --neg:#f0724a;--neg-soft:#3a1c14;--accent:#6ea8fe;--goal:#f4c04e;
-    --radius:14px;
-    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --bg:#130f1f; --surface:#1e1633; --surface-2:#261c40;
+    --ink:#f1ecf9; --ink-soft:#cabfe2; --muted:#9b8fbc; --faint:#6f6393;
+    --line:#332752; --line-2:#2a2044;
+    --brand:#662d91;            /* roxo Linx (violeta): botões, glyph */
+    --brand-lt:#a25ddb;         /* violeta claro: linha do gráfico em fundo escuro */
+    --brand-soft:#2a1c44;
+    --pos:#22c55e;             /* verde: positivo / na meta */
+    --pos-soft:#0f3320;
+    --warn:#ef4444;             /* vermelho: negativo / abaixo da meta */
+    --warn-soft:#3a1717;
+    --target:#fbbf24;           /* linha da meta */
+    --c-otimo:#22c55e; --c-bom:#6ee7b7; --c-neutro:#9a8fb8; --c-ruim:#f59e0b; --c-pessimo:#ef4444;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 30px rgba(0,0,0,.30);
+    --r:16px;
+    --disp:'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --body:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:transparent;color:var(--text);-webkit-font-smoothing:antialiased}
-  .wrap{max-width:860px;margin:0 auto;padding:20px 16px 40px}
-  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
-  .title h1{font-size:19px;font-weight:700;margin:0;letter-spacing:-.2px}
-  .title p{margin:4px 0 0;color:var(--muted);font-size:13px}
-  .monthnav{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px}
-  .monthnav button{background:none;border:none;color:var(--text);font-size:16px;width:30px;height:30px;border-radius:7px;cursor:pointer}
-  .monthnav button:hover{background:var(--panel-2)}
-  .monthnav .label{font-size:13px;font-weight:600;min-width:110px;text-align:center;text-transform:capitalize}
-  .hero{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:16px}
-  .hero-row{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
-  .bignum{font-size:56px;font-weight:800;line-height:1;letter-spacing:-1.5px}
-  .bignum.pos{color:var(--pos)}.bignum.neg{color:var(--neg)}
-  .goalpill{font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;border:1px solid var(--line)}
-  .goalpill.hit{background:var(--pos-soft);color:var(--pos);border-color:transparent}
-  .goalpill.miss{background:var(--neg-soft);color:var(--neg);border-color:transparent}
-  .hero-sub{color:var(--muted);font-size:13px;margin-top:6px}
-  .hero-sub b{color:var(--text);font-weight:600}
-  .bar{position:relative;height:12px;background:var(--panel-2);border-radius:999px;margin-top:18px;overflow:hidden}
-  .bar .fill{position:absolute;top:0;left:0;height:100%;border-radius:999px;transition:width .4s ease,background .3s}
-  .goalmark{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--goal);z-index:2}
-  .goalmark::after{content:'meta 92%';position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--goal);white-space:nowrap;font-weight:600}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:16px}
-  .card h2{font-size:14px;margin:0 0 14px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px;margin-bottom:12px}
-  .field label{display:block;font-size:12px;margin-bottom:5px;color:var(--muted)}
-  .field .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
-  .field input{width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;color:var(--text);padding:9px 10px;font-size:15px;text-align:center;font-weight:600}
-  .field input[type=date]{font-weight:500;text-align:left}
-  .field input:focus{outline:none;border-color:var(--accent)}
-  .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .btn{background:var(--accent);color:#0b1220;border:none;font-weight:700;font-size:14px;padding:10px 18px;border-radius:9px;cursor:pointer}
-  .btn:hover{filter:brightness(1.08)}
-  .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);font-weight:600}
-  .btn.ghost:hover{color:var(--text)}
-  .saveflash{font-size:13px;font-weight:700;opacity:0;transition:opacity .2s}
-  .saveflash.show{opacity:1}
-  .saveflash.ok{color:var(--pos)}.saveflash.err{color:var(--neg)}
-  .live{margin-left:auto;font-size:13px;color:var(--muted)}.live b{color:var(--text)}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{padding:10px 8px;text-align:center;border-bottom:1px solid var(--line)}
-  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
-  td.date,th.date{text-align:left}
-  tbody tr:hover{background:var(--panel-2)}
-  .pct{font-weight:700}.pct.pos{color:var(--pos)}.pct.neg{color:var(--neg)}
-  .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;opacity:.6}
-  .del:hover{color:var(--neg);opacity:1}
-  tfoot td{font-weight:700;border-top:2px solid var(--line);border-bottom:none;padding-top:12px}
-  .empty{text-align:center;color:var(--muted);padding:26px;font-size:13px}
-  .statusline{display:flex;align-items:center;gap:8px;font-size:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
-  .statusdot{width:8px;height:8px;border-radius:50%;flex:none}
-  .statusdot.ok{background:var(--pos)}.statusdot.err{background:var(--neg)}
-  .statustext{color:var(--muted)}
-  .backup{width:100%;margin-top:12px;min-height:70px;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:monospace;font-size:12px;padding:10px;resize:vertical}
-</style>
+  html,body{margin:0}
+  body{background:#130f1f;background-image:radial-gradient(1000px 560px at 50% -8%,rgba(102,45,145,.40),transparent 62%);background-attachment:fixed;color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;line-height:1.5}
+  .wrap{max-width:1060px;margin:0 auto;padding:32px 20px 56px}
 
+  /* ---------- header ---------- */
+  .head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:22px}
+  .brandmark{display:flex;align-items:center;gap:11px}
+  .glyph{width:34px;height:34px;border-radius:9px;background:var(--brand);display:grid;place-items:center;flex:none;box-shadow:var(--shadow)}
+  .glyph svg{width:19px;height:19px}
+  .head h1{font-family:var(--disp);font-size:20px;font-weight:600;margin:0;letter-spacing:-.3px}
+  .head .sub{color:var(--muted);font-size:12.5px;margin-top:1px;letter-spacing:.1px}
+  .monthnav{display:flex;align-items:center;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:4px;box-shadow:var(--shadow)}
+  .monthnav button{background:none;border:none;color:var(--ink-soft);font-size:17px;width:32px;height:32px;border-radius:8px;cursor:pointer;line-height:1;display:grid;place-items:center;transition:background .15s}
+  .monthnav button:hover{background:var(--line-2)}
+  .monthnav .label{font-family:var(--disp);font-size:13.5px;font-weight:600;min-width:118px;text-align:center;text-transform:capitalize;letter-spacing:.2px}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+  .eyebrow{font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--faint)}
+
+  /* ---------- signature: medidor de meta ---------- */
+  .gauge{padding:24px 26px;margin-bottom:16px}
+  .gauge-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .gauge-num{font-family:var(--disp);font-size:64px;font-weight:700;line-height:.95;letter-spacing:-2px;margin-top:6px}
+  .gauge-num.on{color:var(--pos)} .gauge-num.off{color:var(--warn)} .gauge-num.none{color:var(--faint)}
+  .status-pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px}
+  .status-pill.on{background:var(--pos-soft);color:var(--pos)}
+  .status-pill.off{background:var(--warn-soft);color:var(--warn)}
+  .status-pill.none{background:var(--line-2);color:var(--muted)}
+  .gauge-sub{color:var(--muted);font-size:13px;margin-top:2px}
+  .gauge-sub b{color:var(--ink-soft);font-weight:600}
+  /* régua */
+  .track-wrap{margin-top:26px}
+  .track{position:relative;height:16px;background:var(--line-2);border-radius:999px;overflow:visible}
+  .track-fill{position:absolute;inset:0 auto 0 0;height:100%;border-radius:999px;transition:width .5s cubic-bezier(.4,0,.2,1),background .3s;min-width:6px}
+  .track-target{position:absolute;top:-7px;bottom:-7px;width:0;border-left:2px dashed var(--target);z-index:2}
+  .track-target::after{content:'meta 92%';position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-family:var(--disp);font-size:10.5px;font-weight:600;color:var(--target);white-space:nowrap}
+  .track-scale{display:flex;justify-content:space-between;margin-top:9px;font-size:10.5px;color:var(--faint);font-family:var(--disp)}
+
+  /* ---------- KPIs ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+  .kpi{padding:16px 18px}
+  .kpi .eyebrow{margin-bottom:9px}
+  .kpi .val{font-family:var(--disp);font-size:26px;font-weight:600;letter-spacing:-.5px;line-height:1}
+  .kpi .val small{font-size:14px;color:var(--muted);font-weight:500;letter-spacing:0}
+  .kpi .note{font-size:11.5px;color:var(--muted);margin-top:5px}
+
+  /* ---------- charts ---------- */
+  .charts{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;margin-bottom:16px}
+  .panel{padding:20px 22px}
+  .panel h3{font-family:var(--disp);font-size:14px;font-weight:600;margin:2px 0 0;letter-spacing:-.2px}
+  .panel .phead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:14px}
+  .panel .phead .eyebrow{margin-bottom:3px}
+  svg.chart{width:100%;height:auto;display:block;overflow:visible}
+  .empty-chart{height:170px;display:grid;place-items:center;color:var(--faint);font-size:12.5px;text-align:center}
+  /* distribuição */
+  .mixbar{display:flex;height:20px;border-radius:7px;overflow:hidden;background:var(--line-2);margin:4px 0 16px}
+  .mixbar span{height:100%}
+  .legend{display:flex;flex-direction:column;gap:9px}
+  .legend .row{display:flex;align-items:center;gap:9px;font-size:12.5px}
+  .legend .dot{width:9px;height:9px;border-radius:3px;flex:none}
+  .legend .nm{color:var(--ink-soft)}
+  .legend .ct{margin-left:auto;font-family:var(--disp);font-weight:600;color:var(--ink)}
+  .legend .pc{color:var(--faint);font-size:11.5px;min-width:44px;text-align:right}
+
+  /* ---------- form ---------- */
+  .form{padding:22px}
+  .form .phead{margin-bottom:16px}
+  .form-grid{display:grid;grid-template-columns:1.1fr repeat(5,1fr);gap:11px;margin-bottom:16px}
+  .fld label{display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:6px;color:var(--muted);font-weight:500}
+  .fld .dt{width:9px;height:9px;border-radius:3px;flex:none}
+  .fld input{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:10px 11px;font-size:15px;font-family:var(--disp);font-weight:600;text-align:center;transition:border-color .15s,box-shadow .15s}
+  .fld input[type=date]{font-family:var(--body);font-weight:500;text-align:left;font-size:13.5px}
+  .fld input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .btn{font-family:var(--body);font-weight:600;font-size:13.5px;padding:10px 18px;border-radius:10px;cursor:pointer;border:1px solid transparent;transition:filter .15s,background .15s,border-color .15s}
+  .btn.primary{background:var(--brand);color:#fff}
+  .btn.primary:hover{filter:brightness(1.07)}
+  .btn.ghost{background:var(--surface);color:var(--ink-soft);border-color:var(--line)}
+  .btn.ghost:hover{background:var(--line-2)}
+  .flash{font-size:13px;font-weight:600;opacity:0;transition:opacity .2s}
+  .flash.show{opacity:1} .flash.ok{color:var(--brand)} .flash.err{color:var(--warn)}
+  .live{margin-left:auto;font-size:12.5px;color:var(--muted)} .live b{color:var(--ink);font-family:var(--disp)}
+
+  /* ---------- table ---------- */
+  .tbl{padding:22px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:11px 8px;text-align:center;border-bottom:1px solid var(--line-2)}
+  th{color:var(--faint);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px}
+  td{font-family:var(--disp);font-weight:500}
+  td.date,th.date{text-align:left;font-family:var(--body)}
+  td.date{font-weight:600;color:var(--ink)}
+  tbody tr{transition:background .12s} tbody tr:hover{background:var(--surface-2)}
+  .pct{font-weight:700} .pct.on{color:var(--pos)} .pct.off{color:var(--warn)}
+  .del{background:none;border:none;color:var(--faint);cursor:pointer;font-size:14px;line-height:1;padding:4px;border-radius:6px;transition:color .15s,background .15s}
+  .del:hover{color:var(--warn);background:var(--warn-soft)}
+  tfoot td{font-weight:700;border-top:2px solid var(--line);border-bottom:none;padding-top:13px;color:var(--ink)}
+  tfoot td.date{font-family:var(--body)}
+  .empty{text-align:center;color:var(--muted);padding:30px;font-size:13px}
+
+  .status-line{display:flex;align-items:center;gap:9px;font-size:12px;margin-top:16px;padding-top:15px;border-top:1px solid var(--line-2)}
+  .sdot{width:8px;height:8px;border-radius:50%;flex:none} .sdot.ok{background:var(--pos)} .sdot.err{background:var(--warn)}
+  .status-txt{color:var(--muted)}
+
+  /* ---------- backup ---------- */
+  .backup{padding:22px;margin-top:16px}
+  .backup .phead{margin-bottom:14px}
+  .backup textarea{width:100%;margin-top:12px;min-height:66px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;color:var(--ink-soft);font-family:ui-monospace,'Cascadia Code',monospace;font-size:12px;padding:11px;resize:vertical}
+  .backup textarea:focus{outline:none;border-color:var(--brand)}
+  .bmsg{font-size:12.5px;color:var(--muted)}
+
+  @media (max-width:820px){
+    .charts{grid-template-columns:1fr}
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .form-grid{grid-template-columns:repeat(2,1fr)}
+    .fld.date-fld{grid-column:1 / -1}
+  }
+  @media (max-width:480px){
+    .wrap{padding:22px 14px 44px}
+    .gauge-num{font-size:52px}
+    .kpis{grid-template-columns:1fr 1fr}
+    th,td{padding:9px 5px;font-size:12px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
 <div class="wrap">
-  <div class="top">
-    <div class="title">
-      <h1>Tracker de CSAT</h1>
-      <p>Positivos = bom + ótimo · Meta: 92% ou mais</p>
+
+  <header class="head">
+    <div class="brandmark">
+      <span class="glyph" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 13.5l4.5 4.5L20 6.5" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <div>
+        <h1>Tracker de CSAT</h1>
+        <div class="sub">Satisfação diária · positivos = bom + ótimo · meta 92%</div>
+      </div>
     </div>
     <div class="monthnav">
       <button id="prevM" aria-label="Mês anterior">‹</button>
       <span class="label" id="monthLabel"></span>
       <button id="nextM" aria-label="Próximo mês">›</button>
     </div>
-  </div>
+  </header>
 
-  <div class="hero">
-    <div class="hero-row">
-      <span class="bignum" id="pctBig">—</span>
-      <span class="goalpill" id="goalPill">—</span>
+  <!-- SIGNATURE: medidor -->
+  <section class="card gauge">
+    <div class="gauge-top">
+      <div>
+        <div class="eyebrow" id="gaugeEyebrow">Satisfação acumulada</div>
+        <div class="gauge-num none" id="gaugeNum">—</div>
+        <div class="gauge-sub" id="gaugeSub">Nenhuma avaliação registrada neste mês.</div>
+      </div>
+      <span class="status-pill none" id="gaugePill">sem dados</span>
     </div>
-    <div class="hero-sub" id="heroSub">Nenhuma avaliação registrada neste mês ainda.</div>
-    <div class="bar">
-      <div class="fill" id="barFill" style="width:0%"></div>
-      <div class="goalmark" style="left:92%"></div>
+    <div class="track-wrap">
+      <div class="track">
+        <div class="track-fill" id="trackFill" style="width:0%;background:var(--faint)"></div>
+        <div class="track-target" style="left:92%"></div>
+      </div>
+      <div class="track-scale"><span>0%</span><span>50%</span><span>100%</span></div>
     </div>
-  </div>
+  </section>
 
-  <div class="card">
-    <h2>Registrar avaliações do dia</h2>
+  <!-- KPIs -->
+  <section class="kpis">
+    <div class="card kpi"><div class="eyebrow">Avaliações</div><div class="val" id="kTotal">—</div><div class="note" id="kTotalNote">no mês</div></div>
+    <div class="card kpi"><div class="eyebrow">Positivos</div><div class="val" id="kPos">—</div><div class="note" id="kPosNote">bom + ótimo</div></div>
+    <div class="card kpi"><div class="eyebrow">Dias na meta</div><div class="val" id="kDays">—</div><div class="note" id="kDaysNote">dias ≥ 92%</div></div>
+    <div class="card kpi"><div class="eyebrow">Melhor dia</div><div class="val" id="kBest">—</div><div class="note" id="kBestNote">maior % do mês</div></div>
+  </section>
+
+  <!-- CHARTS -->
+  <section class="charts">
+    <div class="card panel">
+      <div class="phead"><div><div class="eyebrow">Evolução</div><h3>Percentual positivo por dia</h3></div></div>
+      <div id="trendWrap"></div>
+    </div>
+    <div class="card panel">
+      <div class="phead"><div><div class="eyebrow">Composição</div><h3>Distribuição do mês</h3></div></div>
+      <div id="mixWrap"></div>
+    </div>
+  </section>
+
+  <!-- FORM -->
+  <section class="card form">
+    <div class="phead"><div><div class="eyebrow">Lançamento</div><h3>Registrar avaliações do dia</h3></div></div>
     <div class="form-grid">
-      <div class="field"><label for="fDate">Data</label><input type="date" id="fDate"></div>
-      <div class="field"><label><span class="dot" style="background:#3ecf8e"></span>Ótimo</label><input type="number" id="fOtimo" min="0" value="0"></div>
-      <div class="field"><label><span class="dot" style="background:#7fd6a6"></span>Bom</label><input type="number" id="fBom" min="0" value="0"></div>
-      <div class="field"><label><span class="dot" style="background:#8b95a7"></span>Neutro</label><input type="number" id="fNeutro" min="0" value="0"></div>
-      <div class="field"><label><span class="dot" style="background:#f0a24a"></span>Ruim</label><input type="number" id="fRuim" min="0" value="0"></div>
-      <div class="field"><label><span class="dot" style="background:#f0724a"></span>Péssimo</label><input type="number" id="fPessimo" min="0" value="0"></div>
+      <div class="fld date-fld"><label for="fDate">Data</label><input type="date" id="fDate"></div>
+      <div class="fld"><label><span class="dt" style="background:var(--c-otimo)"></span>Ótimo</label><input type="number" id="fOtimo" min="0" value="0"></div>
+      <div class="fld"><label><span class="dt" style="background:var(--c-bom)"></span>Bom</label><input type="number" id="fBom" min="0" value="0"></div>
+      <div class="fld"><label><span class="dt" style="background:var(--c-neutro)"></span>Neutro</label><input type="number" id="fNeutro" min="0" value="0"></div>
+      <div class="fld"><label><span class="dt" style="background:var(--c-ruim)"></span>Ruim</label><input type="number" id="fRuim" min="0" value="0"></div>
+      <div class="fld"><label><span class="dt" style="background:var(--c-pessimo)"></span>Péssimo</label><input type="number" id="fPessimo" min="0" value="0"></div>
     </div>
     <div class="actions">
-      <button class="btn" id="saveBtn">Salvar dia</button>
+      <button class="btn primary" id="saveBtn">Salvar dia</button>
       <button class="btn ghost" id="clearBtn">Limpar campos</button>
-      <span class="saveflash" id="saveFlash"></span>
+      <span class="flash" id="saveFlash"></span>
       <span class="live" id="liveCalc"></span>
     </div>
-  </div>
+  </section>
 
-  <div class="card">
-    <h2>Histórico do mês</h2>
+  <!-- TABLE -->
+  <section class="card tbl">
+    <div class="phead"><div><div class="eyebrow">Registro</div><h3>Histórico do mês</h3></div></div>
     <div id="tableWrap"></div>
-    <div class="statusline">
-      <span class="statusdot" id="statusDot"></span>
-      <span class="statustext" id="saveNote"></span>
-    </div>
-  </div>
+    <div class="status-line"><span class="sdot" id="statusDot"></span><span class="status-txt" id="saveNote"></span></div>
+  </section>
 
-  <div class="card">
-    <h2>Backup dos dados</h2>
+  <!-- BACKUP -->
+  <section class="card backup">
+    <div class="phead"><div><div class="eyebrow">Segurança</div><h3>Backup dos dados</h3></div></div>
     <div class="actions">
       <button class="btn ghost" id="exportBtn">Copiar backup</button>
       <button class="btn ghost" id="importBtn">Restaurar backup</button>
-      <span class="live" id="backupMsg"></span>
+      <span class="live bmsg" id="backupMsg"></span>
     </div>
-    <textarea class="backup" id="backupArea" placeholder="Clique em Copiar backup para gerar o texto, ou cole um backup aqui e clique em Restaurar."></textarea>
-  </div>
+    <textarea id="backupArea" placeholder="Clique em Copiar backup para gerar o texto, ou cole um backup aqui e clique em Restaurar."></textarea>
+  </section>
+
 </div>
 
 <script>
 const KEY='csat_tracker_v2';
 const GOAL=92;
 const CATS=['otimo','bom','neutro','ruim','pessimo'];
+const CAT_LABEL={otimo:'Ótimo',bom:'Bom',neutro:'Neutro',ruim:'Ruim',pessimo:'Péssimo'};
+const CAT_VAR={otimo:'--c-otimo',bom:'--c-bom',neutro:'--c-neutro',ruim:'--c-ruim',pessimo:'--c-pessimo'};
 const MONTHS=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-const HAS_WS = typeof window!=='undefined' && window.storage && typeof window.storage.get==='function';
-let entries={}, viewYM, storageOK=false, saveMethod='';
+const HAS_WS=typeof window!=='undefined'&&window.storage&&typeof window.storage.get==='function';
+let entries={},viewYM,storageOK=false,saveMethod='';
 
-function normalize(p){ return (p && typeof p==='object' && !Array.isArray(p)) ? p : null; }
-function lsGet(){ try{ const v=localStorage.getItem(KEY); return v?normalize(JSON.parse(v)):null; }catch(e){ return null; } }
-function lsSet(){ try{ localStorage.setItem(KEY, JSON.stringify(entries)); return true; }catch(e){ return false; } }
-function probeStorage(){
-  let okLs=false;
-  try{ localStorage.setItem('__csat_probe__','1'); localStorage.removeItem('__csat_probe__'); okLs=true; }catch(e){}
-  if(okLs){ storageOK=true; saveMethod='ls'; }
-  else if(HAS_WS){ storageOK=true; saveMethod='ws'; }
-  else { storageOK=false; saveMethod='none'; }
-}
-
+/* ---------- persistência (window.storage + localStorage) ---------- */
+function normalize(p){return(p&&typeof p==='object'&&!Array.isArray(p))?p:null;}
+function lsGet(){try{const v=localStorage.getItem(KEY);return v?normalize(JSON.parse(v)):null;}catch(e){return null;}}
+function lsSet(){try{localStorage.setItem(KEY,JSON.stringify(entries));return true;}catch(e){return false;}}
 async function load(){
   let data=null;
-  if(HAS_WS){ try{ const r=await window.storage.get(KEY); if(r&&r.value) data=normalize(JSON.parse(r.value)); }catch(e){} }
-  if(!data){ data=lsGet(); }          // salva/lê também no navegador local
-  entries = data || {};
+  if(HAS_WS){try{const r=await window.storage.get(KEY);if(r&&r.value)data=normalize(JSON.parse(r.value));}catch(e){}}
+  if(!data)data=lsGet();
+  entries=data||{};
 }
 async function save(){
   let wsOK=false;
-  if(HAS_WS){ try{ await window.storage.set(KEY, JSON.stringify(entries)); const chk=await window.storage.get(KEY); wsOK=!!(chk&&chk.value); }catch(e){} }
-  const lsOK = lsSet();
-  storageOK = wsOK || lsOK;
-  saveMethod = lsOK ? 'ls' : (wsOK ? 'ws' : 'none');
+  if(HAS_WS){try{await window.storage.set(KEY,JSON.stringify(entries));const c=await window.storage.get(KEY);wsOK=!!(c&&c.value);}catch(e){}}
+  const lsOK=lsSet();
+  storageOK=wsOK||lsOK;
+  saveMethod=lsOK?'ls':(wsOK?'ws':'none');
   renderNote();
   return storageOK;
 }
 
+/* ---------- helpers ---------- */
 function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function ymOf(iso){const[y,m]=iso.split('-');return{y:+y,m:+m};}
 function sameMonth(iso){const p=ymOf(iso);return p.y===viewYM.y&&p.m===viewYM.m;}
+function dayNum(iso){return +iso.split('-')[2];}
 function fmtDay(iso){return iso.split('-')[2];}
+function daysInMonth(){return new Date(viewYM.y,viewYM.m,0).getDate();}
 function positives(e){return(e.otimo||0)+(e.bom||0);}
 function totalOf(e){return CATS.reduce((s,c)=>s+(e[c]||0),0);}
+function br(n,d=1){return n.toFixed(d).replace('.',',');}
+function cssv(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
 
 function monthAgg(){
-  let pos=0,tot=0,byCat={otimo:0,bom:0,neutro:0,ruim:0,pessimo:0};
-  for(const iso in entries){ if(!sameMonth(iso))continue; const e=entries[iso];
-    pos+=positives(e);tot+=totalOf(e);CATS.forEach(c=>byCat[c]+=(e[c]||0)); }
-  return{pos,tot,byCat,pct:tot?(pos/tot*100):null};
+  let pos=0,tot=0,byCat={otimo:0,bom:0,neutro:0,ruim:0,pessimo:0},days=[];
+  Object.keys(entries).filter(sameMonth).sort().forEach(iso=>{
+    const e=entries[iso],t=totalOf(e),p=positives(e);
+    pos+=p;tot+=t;CATS.forEach(c=>byCat[c]+=(e[c]||0));
+    days.push({iso,day:dayNum(iso),tot:t,pos:p,pct:t?p/t*100:0});
+  });
+  return{pos,tot,byCat,days,pct:tot?pos/tot*100:null};
 }
 
-function renderHero(){
-  const{pos,tot,pct}=monthAgg();
-  const big=document.getElementById('pctBig'),pill=document.getElementById('goalPill'),
-        sub=document.getElementById('heroSub'),fill=document.getElementById('barFill');
-  if(tot===0){big.textContent='—';big.className='bignum';pill.textContent='sem dados';pill.className='goalpill';
-    sub.textContent='Nenhuma avaliação registrada neste mês ainda.';fill.style.width='0%';return;}
-  const hit=pct>=GOAL;
-  big.textContent=pct.toFixed(1).replace('.',',')+'%';big.className='bignum '+(hit?'pos':'neg');
-  pill.textContent=hit?'✓ meta atingida':(GOAL-pct).toFixed(1).replace('.',',')+' p.p. da meta';
-  pill.className='goalpill '+(hit?'hit':'miss');
-  sub.innerHTML=`<b>${pos}</b> positivos e <b>${tot-pos}</b> negativos em <b>${tot}</b> avaliações`;
-  fill.style.width=Math.min(pct,100)+'%';fill.style.background=hit?'var(--pos)':'var(--neg)';
+/* ---------- render: medidor ---------- */
+function renderGauge(a){
+  const num=document.getElementById('gaugeNum'),pill=document.getElementById('gaugePill'),
+        sub=document.getElementById('gaugeSub'),fill=document.getElementById('trackFill'),
+        eb=document.getElementById('gaugeEyebrow');
+  eb.textContent='Satisfação acumulada · '+MONTHS[viewYM.m-1];
+  if(a.tot===0){
+    num.textContent='—';num.className='gauge-num none';
+    pill.textContent='sem dados';pill.className='status-pill none';
+    sub.textContent='Nenhuma avaliação registrada neste mês.';
+    fill.style.width='0%';fill.style.background='var(--faint)';return;
+  }
+  const on=a.pct>=GOAL;
+  num.textContent=br(a.pct)+'%';num.className='gauge-num '+(on?'on':'off');
+  pill.textContent=on?'✓ meta atingida':'faltam '+br(GOAL-a.pct)+' p.p.';
+  pill.className='status-pill '+(on?'on':'off');
+  sub.innerHTML='<b>'+a.pos+'</b> positivos e <b>'+(a.tot-a.pos)+'</b> negativos em <b>'+a.tot+'</b> avaliações';
+  fill.style.width=Math.min(a.pct,100)+'%';
+  fill.style.background=on?'var(--pos)':'var(--warn)';
 }
-function renderTable(){
-  const rows=Object.keys(entries).filter(sameMonth).sort();
+
+/* ---------- render: KPIs ---------- */
+function renderKPIs(a){
+  const $=id=>document.getElementById(id);
+  if(a.tot===0){
+    ['kTotal','kPos','kDays','kBest'].forEach(i=>$(i).textContent='—');
+    $('kPosNote').textContent='bom + ótimo';$('kDaysNote').textContent='dias ≥ 92%';$('kBestNote').textContent='maior % do mês';
+    return;
+  }
+  $('kTotal').textContent=a.tot;
+  $('kTotalNote').textContent='em '+a.days.length+(a.days.length===1?' dia':' dias');
+  $('kPos').innerHTML=a.pos+' <small>/ '+(a.tot-a.pos)+' neg</small>';
+  const onDays=a.days.filter(d=>d.pct>=GOAL).length;
+  $('kDays').innerHTML=onDays+' <small>/ '+a.days.length+'</small>';
+  const best=a.days.reduce((m,d)=>d.pct>m.pct?d:m,a.days[0]);
+  $('kBest').textContent=br(best.pct)+'%';
+  $('kBestNote').textContent='dia '+String(best.day).padStart(2,'0');
+}
+
+/* ---------- render: gráfico de evolução (SVG) ---------- */
+function renderTrend(a){
+  const wrap=document.getElementById('trendWrap');
+  if(a.days.length===0){wrap.innerHTML='<div class="empty-chart">Registre avaliações para ver a evolução diária.</div>';return;}
+  const W=680,H=210,pL=34,pR=14,pT=22,pB=26;
+  const dim=daysInMonth();
+  const lo=Math.min(...a.days.map(d=>d.pct),GOAL);
+  let yMin=Math.max(0,Math.floor((lo-6)/5)*5); if(yMin>85)yMin=85;
+  const yMax=100;
+  const x=d=>pL+((d-1)/Math.max(dim-1,1))*(W-pL-pR);
+  const y=p=>pT+((yMax-p)/(yMax-yMin))*(H-pT-pB);
+  const pts=a.days.map(d=>({cx:x(d.day),cy:y(d.pct),d}));
+  const line=pts.map((p,i)=>(i?'L':'M')+p.cx.toFixed(1)+' '+p.cy.toFixed(1)).join(' ');
+  const area=pts.length>1?('M'+pts[0].cx.toFixed(1)+' '+(H-pB)+' L'+pts.map(p=>p.cx.toFixed(1)+' '+p.cy.toFixed(1)).join(' L')+' L'+pts[pts.length-1].cx.toFixed(1)+' '+(H-pB)+' Z'):'';
+  const gy=y(GOAL);
+  const brand=cssv('--brand'),brandLt=cssv('--brand-lt'),pos=cssv('--pos'),warn=cssv('--warn'),target=cssv('--target'),faint=cssv('--faint'),line2=cssv('--line-2');
+  const yticks=[yMin,Math.round((yMin+yMax)/2),yMax];
+  const xt=[1,Math.ceil(dim/2),dim];
+  let svg='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Evolução do percentual positivo por dia">';
+  svg+='<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+brandLt+'" stop-opacity=".18"/><stop offset="1" stop-color="'+brandLt+'" stop-opacity="0"/></linearGradient></defs>';
+  yticks.forEach(t=>{const yy=y(t).toFixed(1);svg+='<line x1="'+pL+'" y1="'+yy+'" x2="'+(W-pR)+'" y2="'+yy+'" stroke="'+line2+'"/>';svg+='<text x="'+(pL-8)+'" y="'+yy+'" text-anchor="end" dominant-baseline="middle" font-family="Space Grotesk" font-size="10" fill="'+faint+'">'+t+'</text>';});
+  // linha da meta
+  svg+='<line x1="'+pL+'" y1="'+gy.toFixed(1)+'" x2="'+(W-pR)+'" y2="'+gy.toFixed(1)+'" stroke="'+target+'" stroke-width="1.4" stroke-dasharray="5 4"/>';
+  svg+='<text x="'+(W-pR)+'" y="'+(gy-6).toFixed(1)+'" text-anchor="end" font-family="Space Grotesk" font-size="10" font-weight="600" fill="'+target+'">meta 92%</text>';
+  if(area)svg+='<path d="'+area+'" fill="url(#ag)"/>';
+  svg+='<path d="'+line+'" fill="none" stroke="'+brandLt+'" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>';
+  pts.forEach(p=>{const col=p.d.pct>=GOAL?pos:warn;svg+='<circle cx="'+p.cx.toFixed(1)+'" cy="'+p.cy.toFixed(1)+'" r="3.6" fill="#fff" stroke="'+col+'" stroke-width="2"><title>Dia '+String(p.d.day).padStart(2,'0')+': '+br(p.d.pct)+'% ('+p.d.pos+'/'+p.d.tot+')</title></circle>';});
+  xt.forEach(t=>{svg+='<text x="'+x(t).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-family="Space Grotesk" font-size="10" fill="'+faint+'">'+String(t).padStart(2,'0')+'</text>';});
+  svg+='</svg>';
+  wrap.innerHTML=svg;
+}
+
+/* ---------- render: distribuição ---------- */
+function renderMix(a){
+  const wrap=document.getElementById('mixWrap');
+  if(a.tot===0){wrap.innerHTML='<div class="empty-chart">Sem dados de composição ainda.</div>';return;}
+  let bar='<div class="mixbar">';
+  CATS.forEach(c=>{const v=a.byCat[c];if(v>0)bar+='<span style="width:'+(v/a.tot*100)+'%;background:var('+CAT_VAR[c]+')" title="'+CAT_LABEL[c]+': '+v+'"></span>';});
+  bar+='</div>';
+  let leg='<div class="legend">';
+  CATS.forEach(c=>{const v=a.byCat[c],pc=a.tot?v/a.tot*100:0;
+    leg+='<div class="row"><span class="dot" style="background:var('+CAT_VAR[c]+')"></span><span class="nm">'+CAT_LABEL[c]+'</span><span class="ct">'+v+'</span><span class="pc">'+br(pc)+'%</span></div>';});
+  leg+='</div>';
+  wrap.innerHTML=bar+leg;
+}
+
+/* ---------- render: tabela ---------- */
+function renderTable(a){
   const wrap=document.getElementById('tableWrap');
-  if(rows.length===0){wrap.innerHTML='<div class="empty">Sem registros neste mês. Adicione o primeiro dia acima.</div>';return;}
+  if(a.days.length===0){wrap.innerHTML='<div class="empty">Sem registros neste mês. Adicione o primeiro dia acima.</div>';return;}
   let body='';
-  rows.forEach(iso=>{const e=entries[iso],tot=totalOf(e),pos=positives(e),pct=tot?(pos/tot*100):0,cls=pct>=GOAL?'pos':'neg';
-    body+=`<tr><td class="date">${fmtDay(iso)}</td><td>${e.otimo||0}</td><td>${e.bom||0}</td><td>${e.neutro||0}</td><td>${e.ruim||0}</td><td>${e.pessimo||0}</td><td>${tot}</td><td class="pct ${cls}">${tot?pct.toFixed(1).replace('.',',')+'%':'—'}</td><td><button class="del" data-iso="${iso}" title="Excluir">✕</button></td></tr>`;});
-  const{pos,tot,byCat,pct}=monthAgg(),fcls=pct>=GOAL?'pos':'neg';
-  wrap.innerHTML=`<table><thead><tr><th class="date">Dia</th><th>Ótimo</th><th>Bom</th><th>Neutro</th><th>Ruim</th><th>Péssimo</th><th>Total</th><th>Positivo %</th><th></th></tr></thead><tbody>${body}</tbody><tfoot><tr><td class="date">Total</td><td>${byCat.otimo}</td><td>${byCat.bom}</td><td>${byCat.neutro}</td><td>${byCat.ruim}</td><td>${byCat.pessimo}</td><td>${tot}</td><td class="pct ${fcls}">${pct?pct.toFixed(1).replace('.',',')+'%':'—'}</td><td></td></tr></tfoot></table>`;
+  a.days.forEach(d=>{const e=entries[d.iso],cls=d.pct>=GOAL?'on':'off';
+    body+='<tr><td class="date">'+fmtDay(d.iso)+'</td><td>'+(e.otimo||0)+'</td><td>'+(e.bom||0)+'</td><td>'+(e.neutro||0)+'</td><td>'+(e.ruim||0)+'</td><td>'+(e.pessimo||0)+'</td><td>'+d.tot+'</td><td class="pct '+cls+'">'+(d.tot?br(d.pct)+'%':'—')+'</td><td><button class="del" data-iso="'+d.iso+'" title="Excluir dia" aria-label="Excluir dia '+fmtDay(d.iso)+'">✕</button></td></tr>';});
+  const fcls=a.pct>=GOAL?'on':'off';
+  wrap.innerHTML='<table><thead><tr><th class="date">Dia</th><th>Ótimo</th><th>Bom</th><th>Neutro</th><th>Ruim</th><th>Péssimo</th><th>Total</th><th>Positivo %</th><th></th></tr></thead><tbody>'+body+'</tbody><tfoot><tr><td class="date">Total</td><td>'+a.byCat.otimo+'</td><td>'+a.byCat.bom+'</td><td>'+a.byCat.neutro+'</td><td>'+a.byCat.ruim+'</td><td>'+a.byCat.pessimo+'</td><td>'+a.tot+'</td><td class="pct '+fcls+'">'+(a.pct!==null?br(a.pct)+'%':'—')+'</td><td></td></tr></tfoot></table>';
   wrap.querySelectorAll('.del').forEach(b=>{b.onclick=async()=>{delete entries[b.dataset.iso];await save();renderAll();};});
 }
-function renderMonthLabel(){document.getElementById('monthLabel').textContent=MONTHS[viewYM.m-1]+' '+viewYM.y;}
+
 function renderNote(){
   const dot=document.getElementById('statusDot'),txt=document.getElementById('saveNote');
-  if(saveMethod==='ls'){ dot.className='statusdot ok';
-    txt.textContent='Salvo neste navegador — os dados continuam ao atualizar a página.'; }
-  else if(saveMethod==='ws'){ dot.className='statusdot ok';
-    txt.textContent='Salvo na sessão do chat. Se ao atualizar a página os dados sumirem, baixe o arquivo e abra no seu navegador (ou publique no GitHub Pages) para salvar de vez.'; }
-  else{ dot.className='statusdot err';
-    txt.textContent='Não foi possível salvar de forma permanente aqui. Use "Copiar backup" para guardar seus dados.'; }
+  if(saveMethod==='ls'){dot.className='sdot ok';txt.textContent='Salvo neste navegador — os dados continuam ao atualizar a página.';}
+  else if(saveMethod==='ws'){dot.className='sdot ok';txt.textContent='Salvo nesta sessão. Se os dados sumirem ao atualizar, abra o arquivo no seu navegador ou pelo GitHub Pages.';}
+  else{dot.className='sdot err';txt.textContent='Não foi possível salvar de forma permanente aqui. Use "Copiar backup" para guardar seus dados.';}
 }
-function renderAll(){renderMonthLabel();renderHero();renderTable();}
+function renderMonthLabel(){document.getElementById('monthLabel').textContent=MONTHS[viewYM.m-1]+' '+viewYM.y;}
+function renderAll(){const a=monthAgg();renderMonthLabel();renderGauge(a);renderKPIs(a);renderTrend(a);renderMix(a);renderTable(a);}
 
-function readForm(){return{otimo:+document.getElementById('fOtimo').value||0,bom:+document.getElementById('fBom').value||0,neutro:+document.getElementById('fNeutro').value||0,ruim:+document.getElementById('fRuim').value||0,pessimo:+document.getElementById('fPessimo').value||0};}
-function liveCalc(){const e=readForm(),tot=totalOf(e),el=document.getElementById('liveCalc');
-  if(!tot){el.innerHTML='';return;}el.innerHTML=`Neste dia: <b>${(positives(e)/tot*100).toFixed(1).replace('.',',')}%</b> positivo (${positives(e)}/${tot})`;}
-function loadDayIntoForm(iso){const e=entries[iso];if(!e)return;
-  document.getElementById('fOtimo').value=e.otimo||0;document.getElementById('fBom').value=e.bom||0;document.getElementById('fNeutro').value=e.neutro||0;document.getElementById('fRuim').value=e.ruim||0;document.getElementById('fPessimo').value=e.pessimo||0;liveCalc();}
-function flash(msg,ok){const f=document.getElementById('saveFlash');f.textContent=msg;f.className='saveflash show '+(ok?'ok':'err');setTimeout(()=>f.className='saveflash',1800);}
+/* ---------- form ---------- */
+function fId(c){return 'f'+c.charAt(0).toUpperCase()+c.slice(1);}
+function readForm(){const e={};CATS.forEach(c=>e[c]=+document.getElementById(fId(c)).value||0);return e;}
+function liveCalc(){const e=readForm(),t=totalOf(e),el=document.getElementById('liveCalc');
+  if(!t){el.innerHTML='';return;}el.innerHTML='Neste dia: <b>'+br(positives(e)/t*100)+'%</b> positivo ('+positives(e)+'/'+t+')';}
+function loadDayIntoForm(iso){const e=entries[iso];if(!e)return;CATS.forEach(c=>document.getElementById(fId(c)).value=e[c]||0);liveCalc();}
+function flash(msg,ok){const f=document.getElementById('saveFlash');f.textContent=msg;f.className='flash show '+(ok?'ok':'err');setTimeout(()=>f.className='flash',2000);}
 
+/* ---------- init ---------- */
 (async function(){
   await load();
   const t=todayISO();viewYM=ymOf(t);
   document.getElementById('fDate').value=t;
   if(entries[t])loadDayIntoForm(t);
-  CATS.forEach(c=>{document.getElementById('f'+c.charAt(0).toUpperCase()+c.slice(1)).addEventListener('input',liveCalc);});
+  CATS.forEach(c=>document.getElementById(fId(c)).addEventListener('input',liveCalc));
   document.getElementById('fDate').addEventListener('change',e=>{const iso=e.target.value;if(!iso)return;const p=ymOf(iso);viewYM={y:p.y,m:p.m};if(entries[iso])loadDayIntoForm(iso);renderAll();});
   document.getElementById('saveBtn').onclick=async()=>{
     const iso=document.getElementById('fDate').value;if(!iso){flash('Escolha uma data',false);return;}
     const e=readForm();
-    if(totalOf(e)===0){delete entries[iso];}else{entries[iso]=e;}
+    if(totalOf(e)===0)delete entries[iso];else entries[iso]=e;
     const ok=await save();renderAll();
-    flash(ok?'Salvo ✓':'Salvo só nesta sessão — faça backup',ok);
+    flash(ok?'Salvo ✓':'Salvo só nesta sessão',ok);
   };
-  document.getElementById('clearBtn').onclick=()=>{CATS.forEach(c=>{document.getElementById('f'+c.charAt(0).toUpperCase()+c.slice(1)).value=0;});liveCalc();};
+  document.getElementById('clearBtn').onclick=()=>{CATS.forEach(c=>document.getElementById(fId(c)).value=0);liveCalc();};
   document.getElementById('prevM').onclick=()=>{let m=viewYM.m-1,y=viewYM.y;if(m<1){m=12;y--;}viewYM={y,m};renderAll();};
   document.getElementById('nextM').onclick=()=>{let m=viewYM.m+1,y=viewYM.y;if(m>12){m=1;y++;}viewYM={y,m};renderAll();};
-
   document.getElementById('exportBtn').onclick=async()=>{
-    const txt=JSON.stringify(entries);
-    document.getElementById('backupArea').value=txt;
+    const txt=JSON.stringify(entries);document.getElementById('backupArea').value=txt;
     try{await navigator.clipboard.writeText(txt);document.getElementById('backupMsg').textContent='Backup copiado para a área de transferência.';}
     catch(e){document.getElementById('backupMsg').textContent='Backup gerado na caixa abaixo — copie manualmente.';}
   };
   document.getElementById('importBtn').onclick=async()=>{
     const raw=document.getElementById('backupArea').value.trim();
     if(!raw){document.getElementById('backupMsg').textContent='Cole um backup na caixa primeiro.';return;}
-    try{const parsed=JSON.parse(raw);
-      if(typeof parsed!=='object'||Array.isArray(parsed))throw 0;
-      entries=parsed;await save();renderAll();
-      document.getElementById('backupMsg').textContent='Backup restaurado com sucesso.';}
+    try{const p=JSON.parse(raw);if(typeof p!=='object'||Array.isArray(p))throw 0;entries=p;await save();renderAll();document.getElementById('backupMsg').textContent='Backup restaurado com sucesso.';}
     catch(e){document.getElementById('backupMsg').textContent='Backup inválido — verifique o texto colado.';}
   };
-
-  probeStorage();renderNote();renderAll();
+  await save();      // grava o estado atual e define o status real de salvamento
+  renderAll();
 })();
 </script>
+</body>
+</html>

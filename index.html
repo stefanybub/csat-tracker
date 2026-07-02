@@ -137,6 +137,20 @@
   .backup textarea:focus{outline:none;border-color:var(--brand)}
   .bmsg{font-size:12.5px;color:var(--muted)}
 
+  .gauge-proj{margin-top:11px;font-size:12.5px;color:var(--ink-soft);line-height:1.6}
+  .gauge-proj .chip{font-family:var(--disp);font-weight:600;color:var(--brand-lt)}
+  .gauge-proj.on{color:var(--pos)}
+  .year-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-top:4px}
+  .ycell{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:10px 6px;text-align:center;cursor:pointer;transition:border-color .15s,transform .08s}
+  .ycell:hover{border-color:var(--brand-lt)} .ycell:active{transform:scale(.97)}
+  .ycell.cur{border-color:var(--brand-lt);box-shadow:0 0 0 2px var(--brand-soft)}
+  .ycell .m{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--faint)}
+  .ycell .p{font-family:var(--disp);font-weight:600;font-size:15px;margin-top:4px}
+  .ycell .p.on{color:var(--pos)} .ycell .p.off{color:var(--warn)} .ycell .p.na{color:var(--faint)}
+  .reminder{display:flex;align-items:center;gap:8px;background:var(--brand-soft);border:1px solid var(--line);border-radius:11px;padding:10px 13px;font-size:12.5px;color:var(--ink-soft);margin-bottom:13px}
+  .reminder b{color:var(--brand-lt)}
+  .phead .btn{flex:none}
+  @media (max-width:520px){ .year-grid{grid-template-columns:repeat(4,1fr)} }
   @media (max-width:820px){
     .charts{grid-template-columns:1fr}
     .kpis{grid-template-columns:repeat(2,1fr)}
@@ -179,6 +193,7 @@
         <div class="eyebrow" id="gaugeEyebrow">Satisfação acumulada</div>
         <div class="gauge-num none" id="gaugeNum">—</div>
         <div class="gauge-sub" id="gaugeSub">Nenhuma avaliação registrada neste mês.</div>
+        <div class="gauge-proj" id="gaugeProj"></div>
       </div>
       <span class="status-pill none" id="gaugePill">sem dados</span>
     </div>
@@ -232,15 +247,23 @@
 
   <!-- TABLE -->
   <section class="card tbl">
-    <div class="phead"><div><div class="eyebrow">Registro</div><h3>Histórico do mês</h3></div></div>
+    <div class="phead" style="align-items:center"><div><div class="eyebrow">Registro</div><h3>Histórico do mês</h3></div><button class="btn ghost" id="csvBtn">Exportar CSV</button></div>
     <div id="tableWrap"></div>
     <div class="status-line"><span class="sdot" id="statusDot"></span><span class="status-txt" id="saveNote"></span></div>
+  </section>
+
+  <!-- VISÃO DO ANO -->
+  <section class="card tbl" style="margin-top:16px">
+    <div class="phead"><div><div class="eyebrow">Panorama</div><h3>Fechamento por mês · <span id="yearLabel"></span></h3></div></div>
+    <div class="year-grid" id="yearGrid"></div>
   </section>
 
   <!-- BACKUP -->
   <section class="card backup">
     <div class="phead"><div><div class="eyebrow">Segurança</div><h3>Backup dos dados</h3></div></div>
+    <div class="reminder" id="backupReminder" style="display:none"></div>
     <div class="actions">
+      <button class="btn ghost" id="downloadBtn">Baixar backup (.json)</button>
       <button class="btn ghost" id="exportBtn">Copiar backup</button>
       <button class="btn ghost" id="importBtn">Restaurar backup</button>
       <span class="live bmsg" id="backupMsg"></span>
@@ -291,6 +314,13 @@ function positives(e){return(e.otimo||0)+(e.bom||0);}
 function totalOf(e){return CATS.reduce((s,c)=>s+(e[c]||0),0);}
 function br(n,d=1){return n.toFixed(d).replace('.',',');}
 function cssv(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function downloadFile(name,content,mime){try{const b=new Blob([content],{type:mime});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);return true;}catch(e){return false;}}
+const BKEY='csat_last_backup';
+function markBackup(){try{localStorage.setItem(BKEY,String(Date.now()));}catch(e){}renderReminder();}
+function renderReminder(){const el=document.getElementById('backupReminder');if(!el)return;let last=0;try{last=+localStorage.getItem(BKEY)||0;}catch(e){}if(Object.keys(entries).length===0){el.style.display='none';return;}const days=last?Math.floor((Date.now()-last)/86400000):-1;if(days<0){el.style.display='flex';el.innerHTML='<span>Você ainda não fez backup. Guarde uma cópia segura em <b>Baixar backup (.json)</b>.</span>';}else if(days>=7){el.style.display='flex';el.innerHTML='<span>Faz '+days+' dia'+(days>1?'s':'')+' desde o último backup — que tal <b>baixar um novo</b>?</span>';}else{el.style.display='none';}}
+function yearAgg(y){const r={};Object.keys(entries).forEach(iso=>{const p=ymOf(iso);if(p.y!==y)return;const e=entries[iso];(r[p.m]=r[p.m]||{pos:0,tot:0});r[p.m].pos+=positives(e);r[p.m].tot+=totalOf(e);});return r;}
+function renderYear(){const yl=document.getElementById('yearLabel');if(yl)yl.textContent=viewYM.y;const agg=yearAgg(viewYM.y);let h='';for(let m=1;m<=12;m++){const d=agg[m],has=d&&d.tot>0,pct=has?d.pos/d.tot*100:null,cls=has?(pct>=GOAL?'on':'off'):'na';h+='<div class="ycell'+(m===viewYM.m?' cur':'')+'" data-m="'+m+'"><div class="m">'+MONTHS[m-1].slice(0,3)+'</div><div class="p '+cls+'">'+(has?br(pct)+'%':'—')+'</div></div>';}const g=document.getElementById('yearGrid');if(!g)return;g.innerHTML=h;g.querySelectorAll('.ycell').forEach(c=>c.onclick=()=>{viewYM={y:viewYM.y,m:+c.dataset.m};renderAll();});}
+function exportCSV(){const a=monthAgg();if(a.days.length===0)return false;const sep=';',rows=[];rows.push(['Dia','Ótimo','Bom','Neutro','Ruim','Péssimo','Total','Positivo %'].join(sep));a.days.forEach(d=>{const e=entries[d.iso];rows.push([fmtDay(d.iso),e.otimo||0,e.bom||0,e.neutro||0,e.ruim||0,e.pessimo||0,d.tot,(d.tot?br(d.pct):'')].join(sep));});rows.push(['Total',a.byCat.otimo,a.byCat.bom,a.byCat.neutro,a.byCat.ruim,a.byCat.pessimo,a.tot,(a.pct!==null?br(a.pct):'')].join(sep));const csv='\uFEFF'+rows.join('\r\n');return downloadFile('csat_'+MONTHS[viewYM.m-1]+'_'+viewYM.y+'.csv',csv,'text/csv;charset=utf-8');}
 
 function monthAgg(){
   let pos=0,tot=0,byCat={otimo:0,bom:0,neutro:0,ruim:0,pessimo:0},days=[];
@@ -312,7 +342,7 @@ function renderGauge(a){
     num.textContent='—';num.className='gauge-num none';
     pill.textContent='sem dados';pill.className='status-pill none';
     sub.textContent='Nenhuma avaliação registrada neste mês.';
-    fill.style.width='0%';fill.style.background='var(--faint)';return;
+    fill.style.width='0%';fill.style.background='var(--faint)';var gp0=document.getElementById('gaugeProj');gp0.className='gauge-proj';gp0.innerHTML='';return;
   }
   const on=a.pct>=GOAL;
   num.textContent=br(a.pct)+'%';num.className='gauge-num '+(on?'on':'off');
@@ -321,6 +351,9 @@ function renderGauge(a){
   sub.innerHTML='<b>'+a.pos+'</b> positivos e <b>'+(a.tot-a.pos)+'</b> negativos em <b>'+a.tot+'</b> avaliações';
   fill.style.width=Math.min(a.pct,100)+'%';
   fill.style.background=on?'var(--pos)':'var(--warn)';
+  var proj=document.getElementById('gaugeProj');
+  if(on){proj.className='gauge-proj on';proj.innerHTML='✓ No ritmo atual, o mês fecha dentro da meta.';}
+  else{var need=Math.max(0,Math.ceil((GOAL/100*a.tot-a.pos)/(1-GOAL/100)));proj.className='gauge-proj';proj.innerHTML='No ritmo atual fecha em <span class="chip">'+br(a.pct)+'%</span> · faltam <span class="chip">'+need+'</span> avaliações positivas seguidas para atingir 92%';}
 }
 
 /* ---------- render: KPIs ---------- */
@@ -406,7 +439,7 @@ function renderNote(){
   else{dot.className='sdot err';txt.textContent='Não foi possível salvar de forma permanente aqui. Use "Copiar backup" para guardar seus dados.';}
 }
 function renderMonthLabel(){document.getElementById('monthLabel').textContent=MONTHS[viewYM.m-1]+' '+viewYM.y;}
-function renderAll(){const a=monthAgg();renderMonthLabel();renderGauge(a);renderKPIs(a);renderTrend(a);renderMix(a);renderTable(a);}
+function renderAll(){const a=monthAgg();renderMonthLabel();renderGauge(a);renderKPIs(a);renderTrend(a);renderMix(a);renderTable(a);renderYear();renderReminder();}
 
 /* ---------- form ---------- */
 function fId(c){return 'f'+c.charAt(0).toUpperCase()+c.slice(1);}
@@ -438,6 +471,7 @@ function flash(msg,ok){const f=document.getElementById('saveFlash');f.textConten
     const txt=JSON.stringify(entries);document.getElementById('backupArea').value=txt;
     try{await navigator.clipboard.writeText(txt);document.getElementById('backupMsg').textContent='Backup copiado para a área de transferência.';}
     catch(e){document.getElementById('backupMsg').textContent='Backup gerado na caixa abaixo — copie manualmente.';}
+    markBackup();
   };
   document.getElementById('importBtn').onclick=async()=>{
     const raw=document.getElementById('backupArea').value.trim();
@@ -445,6 +479,8 @@ function flash(msg,ok){const f=document.getElementById('saveFlash');f.textConten
     try{const p=JSON.parse(raw);if(typeof p!=='object'||Array.isArray(p))throw 0;entries=p;await save();renderAll();document.getElementById('backupMsg').textContent='Backup restaurado com sucesso.';}
     catch(e){document.getElementById('backupMsg').textContent='Backup inválido — verifique o texto colado.';}
   };
+  document.getElementById('csvBtn').onclick=()=>{const ok=exportCSV();document.getElementById('backupMsg').textContent=ok?'CSV do mês baixado.':'Sem dados neste mês para exportar.';};
+  document.getElementById('downloadBtn').onclick=()=>{const ok=downloadFile('csat_backup_'+todayISO()+'.json',JSON.stringify(entries,null,2),'application/json');document.getElementById('backupMsg').textContent=ok?'Backup .json baixado com sucesso.':'Não foi possível baixar aqui.';if(ok)markBackup();};
   await save();      // grava o estado atual e define o status real de salvamento
   renderAll();
 })();
